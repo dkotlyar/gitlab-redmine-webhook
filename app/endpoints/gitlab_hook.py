@@ -8,6 +8,8 @@ bp = Blueprint('gitlab', __name__)
 
 @bp.route('/<string:project_id>/', methods=['GET', 'POST'])
 def hook(project_id):
+    redmine_cf_gitlab_id = environ.get("REDMINE_CF_GITLAB_ID")
+
     gitlab_issue = request.json["object_attributes"]
 
     redmine = Redmine(url=environ.get('REDMINE_URL'), key=environ.get('REDMINE_KEY'))
@@ -15,7 +17,7 @@ def hook(project_id):
     redmine_issue = redmine.issue.filter(
         project_id=project_id,
         **{
-            f'cf_{environ.get("REDMINE_CF_GITLAB_ID")}': gitlab_issue['iid'],
+            f'cf_{redmine_cf_gitlab_id}': gitlab_issue['iid'],
         }
     )
 
@@ -30,6 +32,19 @@ def hook(project_id):
                 f'{gitlab_issue["title"]}',
         description=f'{gitlab_issue["description"]}\n\n'
                     f'"GitLab link":{gitlab_issue["url"]}',
+        custom_fields=[
+            *[
+                dict(
+                    id=cf.id,
+                    value=cf.value
+                ) for cf in redmine_issue.custom_fields
+                if cf.id != redmine_cf_gitlab_id
+            ],
+            dict(
+                id=redmine_cf_gitlab_id,
+                value=gitlab_issue["iid"],
+            ),
+        ],
     )
 
     return {}
