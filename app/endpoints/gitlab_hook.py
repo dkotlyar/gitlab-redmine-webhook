@@ -1,16 +1,20 @@
 from os import environ
 
 from flask import Blueprint, request
-from redminelib import Redmine
+
+from app.actions.gitlab import get_gitlab_client
+from app.actions.redmine import get_redmine_client
 
 bp = Blueprint('gitlab', __name__)
 
 
 @bp.route('/<string:project_id>/', methods=['GET', 'POST'])
 def hook(project_id):
-    gitlab_issue = request.json["object_attributes"]
+    data = request.json
+    gitlab_issue = data['object_attributes']
 
-    redmine = Redmine(url=environ.get('REDMINE_URL'), key=environ.get('REDMINE_KEY'))
+    redmine = get_redmine_client()
+    gitlab = get_gitlab_client()
 
     redmine_issue = redmine.issue.filter(
         project_id=project_id,
@@ -19,11 +23,13 @@ def hook(project_id):
         }
     )
 
+    create_notes = False
     if len(redmine_issue):
         redmine_issue = redmine_issue[0]
     else:
         redmine_issue = redmine.issue.new()
-        redmine_issue.project_id=project_id
+        redmine_issue.project_id = project_id
+        create_notes = True
 
     redmine_issue.save(
         subject=f'GitLab Issue #{gitlab_issue["iid"]}: '
@@ -31,5 +37,16 @@ def hook(project_id):
         description=f'{gitlab_issue["description"]}\n\n'
                     f'"GitLab link":{gitlab_issue["url"]}',
     )
+
+    if gitlab and create_notes:
+        gl_issue = (
+            gitlab
+            .projects.get(data['project']['id'])
+            .issues.get(gitlab_issue['iid'])
+        )
+
+        gl_issue.notes.create(dict(
+            body=f'[Redmine issue #{redmine_issue.id}]({redmine.url}/issues/{redmine_issue.id})'
+        ))
 
     return {}
