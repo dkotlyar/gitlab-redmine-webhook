@@ -16,8 +16,11 @@ def hook(project_id):
     gitlab_issue = data.object_attributes
 
     redmine_cf_id = environ.get('REDMINE_CF_GITLAB_ID')
-    redmine_issue_status_inwork = environ.get('REDMINE_ISSUE_STATUS_INWORK')
-    redmine_issue_status_done = environ.get('REDMINE_ISSUE_STATUS_DONE')
+    redmine_issue_status_inwork = int(environ.get('REDMINE_ISSUE_STATUS_INWORK'))
+    redmine_issue_status_done = int(environ.get('REDMINE_ISSUE_STATUS_DONE'))
+    gitlab_issue_status_done = environ.get('GITLAB_ISSUE_STATUS_DONE', 'Done')
+    redmine_issue_status_declined = int(environ.get('REDMINE_ISSUE_STATUS_DECLINED'))
+    gitlab_issue_status_declined = environ.get('GITLAB_ISSUE_STATUS_DECLINED', 'Declined')
 
     redmine = get_redmine_client()
     gitlab = get_gitlab_client()
@@ -63,10 +66,19 @@ def hook(project_id):
                 ]
                 if assignee_ids:
                     redmine_issue.assigned_to_id = assignee_ids[0]
+            redmine_issue.status_id = redmine_issue_status_inwork
         else:
             redmine_issue.assigned_to_id = None
     except:
         pass
+
+    if any(label['title'] == gitlab_issue_status_done for label in gitlab_issue.labels.else_([])):
+        redmine_issue.status_id = redmine_issue_status_done
+        redmine_issue.done_ratio = 100
+
+    if any(label['title'] == gitlab_issue_status_declined for label in gitlab_issue.labels.else_([])):
+        redmine_issue.status_id = redmine_issue_status_declined
+        redmine_issue.done_ratio = 0
 
     redmine_issue.save(
         subject=f'GitLab Issue #{gitlab_issue.iid.else_(0)}: '
