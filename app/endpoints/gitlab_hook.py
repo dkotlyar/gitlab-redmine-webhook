@@ -5,7 +5,7 @@ from flask import Blueprint, request
 from none_aware import Maybe
 
 from app.actions.gitlab import get_gitlab_client
-from app.actions.redmine import get_redmine_client
+from app.actions.redmine import get_redmine_client, get_project_users
 
 bp = Blueprint('gitlab', __name__)
 
@@ -61,16 +61,17 @@ def hook(project_id):
             if assignee_username:
                 assignee_username = assignee_username[0]
                 assignee_ids = [
-                    user.id
-                    for membership in redmine.project_membership.filter(project_id=project_id)
-                    if (user := redmine.user.get(Maybe(membership).user.id())).login == assignee_username
+                    member.id
+                    for member in get_project_users(redmine, project_id=project_id)
+                    if member.login == assignee_username
                 ]
                 if assignee_ids:
                     redmine_issue.assigned_to_id = assignee_ids[0]
             redmine_issue.status_id = redmine_issue_status_inwork
         else:
             redmine_issue.assigned_to_id = None
-    except:
+    except Exception as e:
+        print(e)
         pass
 
     if (
