@@ -27,6 +27,7 @@ def hook(project_id):
 
     redmine_issue = redmine.issue.filter(
         project_id=project_id,
+        status_id='*',
         **{
             f'cf_{redmine_cf_id}': gitlab_issue.id.else_(0),
         }
@@ -72,7 +73,10 @@ def hook(project_id):
     except:
         pass
 
-    if any(label['title'] == gitlab_issue_status_done for label in gitlab_issue.labels.else_([])):
+    if (
+        gitlab_issue.state() == 'closed' or
+        any(label['title'] == gitlab_issue_status_done for label in gitlab_issue.labels.else_([]))
+    ):
         redmine_issue.status_id = redmine_issue_status_done
         redmine_issue.done_ratio = 100
 
