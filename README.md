@@ -31,10 +31,13 @@ docker run -it -p 5000:5000 \
 
 Other environment variables:
 
-| Variable                      | Notes                                                             |
-|-------------------------------|-------------------------------------------------------------------|
-| REDMINE_ISSUE_STATUS_INWORK   | Redmine issue status id, when issue in work                       |
-| REDMINE_ISSUE_STATUS_DONE     | Redmine issue status id, when issue is done                       |
-| GITLAB_ISSUE_STATUS_DONE      | GitLab label title, when issue is done. Default is `Done`         |
-| REDMINE_ISSUE_STATUS_DECLINED | Redmine issue status id, when issue is declined                   |
-| GITLAB_ISSUE_STATUS_DECLINED  | GitLab label title, when issue is declined. Default is `Declined` |
+| Variable                       | Notes                                                             |
+|--------------------------------|-------------------------------------------------------------------|
+| REDMINE_ISSUE_STATUS_INWORK    | Redmine issue status id, when issue in work                       |
+| REDMINE_ISSUE_STATUS_DONE      | Redmine issue status id, when issue is done                       |
+| GITLAB_ISSUE_STATUS_DONE       | GitLab label title, when issue is done. Default is `Done`         |
+| REDMINE_ISSUE_STATUS_DECLINED  | Redmine issue status id, when issue is declined                   |
+| GITLAB_ISSUE_STATUS_DECLINED   | GitLab label title, when issue is declined. Default is `Declined` |
+| REDMINE_ISSUE_PRIORITY_DEFAULT | Redmine issue default priority                                    |
+| REDMINE_ISSUE_PRIORITY_BACKLOG | Redmine issue priority for backlog milestone                      |
+| GITLAB_MILESTONE_BACKLOG       | Milestone title for backlog priority. Default is `backlog`        |
