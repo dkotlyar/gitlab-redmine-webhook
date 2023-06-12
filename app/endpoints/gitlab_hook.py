@@ -1,4 +1,3 @@
-import traceback
 from os import environ
 
 from flask import Blueprint, request
@@ -21,6 +20,9 @@ def hook(project_id):
     gitlab_issue_status_done = environ.get('GITLAB_ISSUE_STATUS_DONE', 'Done')
     redmine_issue_status_declined = int(environ.get('REDMINE_ISSUE_STATUS_DECLINED'))
     gitlab_issue_status_declined = environ.get('GITLAB_ISSUE_STATUS_DECLINED', 'Declined')
+    redmine_issue_priority_default = int(environ.get('REDMINE_ISSUE_PRIORITY_DEFAULT'))
+    redmine_issue_priority_backlog = int(environ.get('REDMINE_ISSUE_PRIORITY_BACKLOG'))
+    gitlab_milestone_backlog = environ.get('GITLAB_MILESTONE_BACKLOG', 'backlog')
 
     redmine = get_redmine_client()
     gitlab = get_gitlab_client()
@@ -85,11 +87,21 @@ def hook(project_id):
         redmine_issue.status_id = redmine_issue_status_declined
         redmine_issue.done_ratio = 0
 
+    redmine_issue_priority = redmine_issue_priority_default
+    milestones = [
+        m
+        for m in gitlab.projects.get(data.project.id()).milestones.list()
+        if m.id == gitlab_issue.milestone_id()
+    ]
+    if milestones and milestones[0].title == gitlab_milestone_backlog:
+        redmine_issue_priority = redmine_issue_priority_backlog
+
     redmine_issue.save(
         subject=f'GitLab Issue #{gitlab_issue.iid.else_(0)}: '
                 f'{gitlab_issue.title.else_("")}',
         description=f'{gitlab_issue.description.else_("")}\n\n'
                     f'"GitLab link":{gitlab_issue.url.else_("")}',
+        priority_id=redmine_issue_priority,
         custom_fields=custom_fields,
     )
 
